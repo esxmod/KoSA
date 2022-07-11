@@ -5,20 +5,9 @@ from models.kobert import TFKoBertModel
 from modules.tokenizer import Tokenizer
 
 
-def preprocess(tokenizer, sentence):
-    encoded_dict = tokenizer.tokenize(sentence)
-
-    token_ids = np.array(encoded_dict['input_ids']).reshape(1, -1)
-    token_masks = np.array(encoded_dict['attention_mask']).reshape(1, -1)
-    token_segments = np.array(encoded_dict['token_type_ids']).reshape(1, -1)
-
-    return (token_ids, token_masks, token_segments)
-
-
 def main(config):
     tokenizer = Tokenizer(config.tokenizer, config.embed_dim)
-
-    inputs = preprocess(tokenizer, config.input)
+    inputs = tokenizer.tokenize(config.input, True)
 
     model = TFKoBertModel(config.model, config.input_dim, config.output_dim)
     model.load_weights(filepath=config.checkpoint_path)
