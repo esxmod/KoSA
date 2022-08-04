@@ -1,38 +1,39 @@
+from functools import wraps
 from flask import Flask, render_template, request, send_from_directory
-
-from models.kobert import TFKoBertModel
-from modules.tokenizer import Tokenizer
+from examples import SentimentAnalysis, Summarization
 
 
 app = Flask(__name__,
             static_folder='build/static',
             template_folder='build')
 
-model = TFKoBertModel('kykim/bert-kor-base', 128, 2)
-model.load_weights('saved_models/best_weights.h5')
-
-tokenizer = Tokenizer('kykim/bert-kor-base', 128)
-
-memo = {}
+sa = SentimentAnalysis()
+summ = Summarization()
 
 
-def predict_sentence(sentence):
-    result = tokenizer.tokenize(sentence, True)
-    result = model.predict(result)
-    result = result.tolist()[0]
-    return result
+def get_query(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        params = request.get_json()
+        query = params['query']
+        return func(query=query, *args, **kwargs)
+
+    return wrapper
 
 
-@app.route('/api/predict', methods=['POST'])
-def predict():
-    params = request.get_json()
-    query = params['query']
-
-    if query not in memo:
-        memo[query] = predict_sentence(query)
-
+@app.route('/api/predict/sa', methods=['POST'])
+@get_query
+def predict_sa(query):
     return {
-        'result': memo[query]
+        'result': sa.predict(query)
+    }
+
+
+@app.route('/api/predict/sum', methods=['POST'])
+@get_query
+def predict_summ(query):
+    return {
+        'result': summ.predict(query)
     }
 
 
